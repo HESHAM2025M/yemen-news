@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>أخبار اليمن - تحديث كل ساعة</title>
+<style>
+*{box-sizing:border-box} body{font-family:system-ui,'Segoe UI',Tahoma,sans-serif;margin:0;background:#f4f4f4;color:#111}
+header{background:#b91c1c;color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:10}
+header h1{margin:0;font-size:24px} header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.ticker{background:#111;color:#fff;padding:8px 12px;white-space:nowrap;overflow:hidden}
+.ticker span{color:#fbbf24;font-weight:700}
+.controls{max-width:900px;margin:14px auto;padding:0 12px;display:flex;gap:8px;flex-wrap:wrap}
+.controls input,.controls select{flex:1;min-width:140px;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px}
+.controls button{padding:10px 16px;background:#b91c1c;color:#fff;border:0;border-radius:8px;font-weight:700;cursor:pointer}
+.updated{max-width:900px;margin:0 auto;padding:0 12px;color:#666;font-size:13px}
+#list{max-width:900px;margin:10px auto;padding:0 12px 40px}
+.card{background:#fff;border-radius:12px;padding:16px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.card h2{margin:0 0 8px;font-size:18px;line-height:1.5}
+.card h2 a{color:#111;text-decoration:none}
+.card p{margin:0 0 10px;color:#444;line-height:1.7}
+.meta{font-size:12px;color:#888;display:flex;gap:12px;flex-wrap:wrap}
+.badge{background:#fee2e2;color:#b91c1c;padding:2px 8px;border-radius:20px;font-weight:700}
+.badge.اقتصاد{background:#fef3c7;color:#92400e}
+.install{background:#fff3cd;border:1px solid #fbbf24;border-radius:10px;padding:12px;margin:14px auto;max-width:900px}
+</style>
+</head>
+<body>
+<header><h1>🇾🇪 أخبار اليمن</h1><p>تحديث تلقائي كل ساعة عبر GitHub المجاني — من أهم المواقع والقنوات اليمنية</p></header>
+<div class="ticker"><span>🚨 عاجل</span> <span id="tickerText">جارٍ تحميل أحدث الأخبار...</span></div>
+<div class="controls">
+<input id="q" type="search" placeholder="ابحث في الأخبار...">
+<select id="cat"><option value="">كل التصنيفات</option><option>عاجل</option><option>سياسة</option><option>اقتصاد</option><option>رياضة</option></select>
+<select id="src"><option value="">كل المصادر</option></select>
+<button onclick="load()">🔄 تحديث الآن</button>
+</div>
+<p class="updated" id="updated"></p>
+<div class="install"><b>📱 تثبيت على الهاتف:</b> افتح هذه الصفحة في Chrome على أندرويد ← القائمة ⋮ ← إضافة إلى الشاشة الرئيسية. ستصبح أيقونة تطبيق.</div>
+<main id="list"></main>
+<script>
+let articles=[];
+async function load(){
+  document.getElementById('list').innerHTML='<p style="text-align:center">جارٍ التحميل...</p>';
+  try{
+    const r=await fetch('data/news.json?v='+Date.now());
+    const d=await r.json();
+    articles=d.articles||[];
+    document.getElementById('updated').textContent='آخر تحديث تلقائي: '+d.updated_at_text+' • عدد الأخبار: '+d.count;
+    const urg=articles.filter(a=>a.category==='عاجل').slice(0,3);
+    document.getElementById('tickerText').textContent=urg.length?urg.map(a=>a.title).join('  •  '):'لا توجد أخبار عاجلة الآن';
+    const sel=document.getElementById('src');
+    if(sel.options.length<=1){[...new Set(articles.map(a=>a.source))].forEach(s=>{let o=document.createElement('option');o.textContent=s;sel.appendChild(o)})}
+    render();
+  }catch(e){document.getElementById('list').innerHTML='<p style="text-align:center">لم تصل الأخبار بعد. أعد المحاولة بعد دقيقة، أو تأكد أن GitHub Actions اشتغل مرة واحدة.</p>'}
+}
+function render(){
+  const q=document.getElementById('q').value.trim();
+  const cat=document.getElementById('cat').value;
+  const src=document.getElementById('src').value;
+  const list=articles.filter(a=>(!q||a.title.includes(q)||a.summary.includes(q))&&(!cat||a.category===cat)&&(!src||a.source===src));
+  document.getElementById('list').innerHTML=list.length?list.map(a=>`<article class="card"><h2><a href="${a.link}" target="_blank" rel="noopener">${a.title}</a></h2><p>${a.summary||''}</p><div class="meta"><span class="badge ${a.category}">${a.category}</span><span>📰 ${a.source}</span><span>${a.published||''}</span><a href="${a.link}" target="_blank" rel="noopener">قراءة كاملة ←</a></div></article>`).join(''):'<p style="text-align:center">لا نتائج مطابقة.</p>';
+}
+document.getElementById('q').addEventListener('input',render);
+document.getElementById('cat').addEventListener('change',render);
+document.getElementById('src').addEventListener('change',render);
+load();
+setInterval(load,10*60*1000);
+</script>
+</body>
+</html>
