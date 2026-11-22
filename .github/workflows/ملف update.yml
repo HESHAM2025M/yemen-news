@@ -1,0 +1,38 @@
+name: تحديث أخبار اليمن كل ساعة
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # كل ساعة تماماً بتوقيت UTC
+  workflow_dispatch:  # زر تشغيل يدوي من تبويب Actions
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: جلب الأخبار
+        run: python fetch_news.py
+      - name: حفظ الأخبار الجديدة
+        run: |
+          git config user.name "YemenNewsBot"
+          git config user.email "bot@yemennews.local"
+          git add data/news.json
+          git diff --cached --quiet || git commit -m "تحديث الأخبار $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push || true
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - uses: actions/deploy-pages@v4
